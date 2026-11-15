@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Data Viewer - Avro SQL Query</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .query-panel {
+            background: #ffffff;
+            border: 1px solid #e8ebf2;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        }
+        .query-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .query-panel-header h2 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 600;
+            color: #172033;
+        }
+        .quick-queries {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .quick-btn {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 150ms ease;
+        }
+        .quick-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+        .textarea-container {
+            position: relative;
+            margin-bottom: 16px;
+        }
+        .sql-textarea {
+            width: 100%;
+            min-height: 140px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            background: #f8fafc;
+            color: #0f172a;
+            resize: vertical;
+            transition: border-color 150ms ease, box-shadow 150ms ease;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .sql-textarea:focus {
+            border-color: #4f46e5;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+        .query-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .run-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            background: #4f46e5;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 150ms ease, transform 100ms ease;
+        }
+        .run-btn:hover {
+            background: #4338ca;
+        }
+        .run-btn:active {
+            transform: scale(0.98);
+        }
+        .run-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .meta-chips {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: #64748b;
+        }
+        .result-meta-badge {
+            background: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #334155;
+        }
+        .error-banner {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 14px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.4;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .results-section {
+            background: #ffffff;
+            border: 1px solid #e8ebf2;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        }
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .results-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #172033;
+        }
+        .datagrid-container {
+            overflow: auto;
+            max-height: 600px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .datagrid-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+        .datagrid-table thead {
+            position: sticky;
+            top: 0;
+            background: #f8fafc;
+            z-index: 2;
+        }
+        .datagrid-table th {
+            padding: 10px 14px;
+            font-weight: 600;
+            color: #334155;
+            border-bottom: 1px solid #cbd5e1;
+            white-space: nowrap;
+            background: #f8fafc;
+        }
+        .datagrid-table td {
+            padding: 8px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+            max-width: 380px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: top;
+        }
+        .datagrid-table tr:hover td {
+            background: #f8fafc;
+        }
+        .json-cell {
+            font-family: ui-monospace, SFMono-Regular, monospace;
+            font-size: 11.5px;
+            color: #0369a1;
+            background: #f0f9ff;
+            border-radius: 4px;
+            padding: 2px 6px;
+            cursor: pointer;
+        }
+        .empty-placeholder {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <aside class="sidebar" aria-label="Main sidebar">
+        <div class="sidebar-top">
+            <a class="brand" href="/" aria-label="Data Viewer home">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 5.5C4 4.67 7.58 4 12 4s8 .67 8 1.5S16.42 7 12 7 4 6.33 4 5.5Z" stroke="currentColor" stroke-width="1.7"/>
+                        <path d="M4 5.5v13C4 19.33 7.58 20 12 20s8-.67 8-1.5v-13M4 12c0 .83 3.58 1.5 8 1.5s8-.67 8-1.5" stroke="currentColor" stroke-width="1.7"/>
+                    </svg>
+                </span>
+                <span class="brand-name">Data Viewer</span>
+            </a>
+            <button class="collapse-toggle" id="collapseToggle" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="m12 4-6 6 6 6M6 10h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+
+        <nav class="nav" aria-label="Main navigation">
+            <a class="nav-link active" href="/" aria-current="page" title="Avro Query">
+                <span class="nav-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 19.5h16M6.5 16V10m5.5 6V4.5m5.5 11.5v-8"/></svg>
+                </span>
+                <span class="nav-text">Query Console</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="profile">
+                <span class="avatar" aria-hidden="true">DV</span>
+                <span class="profile-copy">
+                    <span class="profile-name">DuckDB Avro</span>
+                    <span class="profile-detail">sample_records.avro</span>
+                </span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="content-inner">
+            <div class="query-panel">
+                <div class="query-panel-header">
+                    <h2>SQL Query Editor</h2>
+                    <span style="font-size: 12px; color: #64748b;">Table: <strong>sample_records</strong> (or <strong>avro_data</strong>)</span>
+                </div>
+
+                <div class="quick-queries">
+                    <span style="font-size: 12px; font-weight: 600; color: #64748b; align-self: center;">Quick presets:</span>
+                    <button class="quick-btn" type="button" data-sql="SELECT * FROM sample_records LIMIT 20;">All 5 Columns</button>
+                    <button class="quick-btn" type="button" data-sql="SELECT status, count(*) AS count FROM sample_records GROUP BY status;">Group By Status</button>
+                    <button class="quick-btn" type="button" data-sql="SELECT id, name, json_extract_string(metadataJson, '$.source') AS source, json_extract_string(payloadJson, '$.department') AS department, json_extract(payloadJson, '$.preferences.theme') AS theme FROM sample_records LIMIT 20;">Extract JSON Fields</button>
+                    <button class="quick-btn" type="button" data-sql="SELECT id, name, CAST(json_extract(payloadJson, '$.score') AS DOUBLE) AS score FROM sample_records ORDER BY score DESC LIMIT 10;">JSON Numeric Sort</button>
+                </div>
+
+                <div class="textarea-container">
+                    <textarea id="sqlQuery" class="sql-textarea" rows="5" spellcheck="false" placeholder="Enter SQL query here... e.g. SELECT * FROM sample_records LIMIT 50;">SELECT * FROM sample_records LIMIT 50;</textarea>
+                </div>
+
+                <div class="query-actions">
+                    <button id="runQueryBtn" class="run-btn" type="button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <span>Execute Query</span>
+                    </button>
+                    <div class="meta-chips">
+                        <span id="execStats" style="display: none;">
+                            <span class="result-meta-badge" id="rowCountBadge">0 rows</span>
+                            <span class="result-meta-badge" id="timeBadge">0 ms</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="errorBanner" class="error-banner"></div>
+
+            <div class="results-section">
+                <div class="results-header">
+                    <h3>Query Results</h3>
+                    <span id="columnsBadge" style="font-size: 13px; color: #64748b;">Dynamic Data Grid</span>
+                </div>
+
+                <div id="gridWrapper" class="datagrid-container">
+                    <div id="emptyPlaceholder" class="empty-placeholder">
+                        Click "Execute Query" above to inspect the Avro dataset.
+                    </div>
+                    <table id="datagrid" class="datagrid-table" style="display: none;">
+                        <thead id="gridHead">
+                        </thead>
+                        <tbody id="gridBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>
