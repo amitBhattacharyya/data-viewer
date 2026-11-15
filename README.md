@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Data Viewer
 
 A simple web application for exploring data stored in files with SQL. The project uses DuckDB to query file-based data formats such as Avro, Parquet, and CSV, and presents query results in a browser-based data grid.
@@ -53,3 +54,6 @@ On macOS or Linux:
 - DuckDB JDBC
 - Apache Avro
 - Thymeleaf
+=======
+# data-viewer
+>>>>>>> f890461ebd76acb532fa860ee63ba96adb8e9c7e
